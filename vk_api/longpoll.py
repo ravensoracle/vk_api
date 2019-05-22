@@ -10,7 +10,10 @@ from collections import defaultdict
 from datetime import datetime
 from enum import IntEnum
 
-import requests
+import faster_than_requests as requests
+import urllib.parse
+import os
+import json
 import six
 from six.moves import range
 
@@ -498,7 +501,7 @@ class VkLongPoll(object):
         self.ts = None
         self.pts = mode & VkLongpollMode.GET_PTS
 
-        self.session = requests.Session()
+        os.environ['requests_timeout'] = str(self.wait + 10)
 
         self.update_longpoll_server()
 
@@ -536,11 +539,9 @@ class VkLongPoll(object):
             'version': 3
         }
 
-        response = self.session.get(
-            self.url,
-            params=values,
-            timeout=self.wait + 10
-        ).json()
+        self.url = f'{self.url}?{urllib.parse.urlencode(values)}'
+
+        response = json.dumps(requests.get2json(self.url))
 
         if 'failed' not in response:
             self.ts = response['ts']
