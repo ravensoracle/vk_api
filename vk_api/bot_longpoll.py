@@ -7,7 +7,10 @@
 """
 from enum import Enum
 
-import requests
+import faster_than_requests as requests
+import urllib.parse
+import os
+import json
 
 CHAT_START_ID = int(2E9)
 
@@ -202,7 +205,7 @@ class VkBotLongPoll(object):
         self.server = None
         self.ts = None
 
-        self.session = requests.Session()
+        os.environ['requests_timeout'] = str(self.wait + 10)
 
         self.update_longpoll_server()
 
@@ -240,11 +243,9 @@ class VkBotLongPoll(object):
             'wait': self.wait,
         }
 
-        response = self.session.get(
-            self.url,
-            params=values,
-            timeout=self.wait + 10
-        ).json()
+        self.url = f'{self.url}?{urllib.parse.urlencode(values)}'
+
+        response = json.dumps(requests.get2json(self.url))
 
         if 'failed' not in response:
             self.ts = response['ts']
